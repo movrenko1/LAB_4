@@ -1,15 +1,15 @@
-"Region","Total","State_Municipal","Private"
-"Republic of Bashkortostan","114.4","101.7","12.8"
-"Mari El Republic","19.6","16.5","3.2"
-"The Republic of Mordovia","30.1","24.8","5.4"
-"Republic of Tatarstan","163.2","124.2","39"
-"Udmurt republic","51.3","44.2","7.1"
-"Chuvash Republic","38.3","31.7","6.6"
-"Perm region","66.4","59.8","6.6"
-"Kirov region","36.2","32.1","4.1"
-"Nizhny Novgorod Region","98.2","89.1","9.1"
-"Orenburg region","53.3","48.1","5.2"
-"Penza region","40.2","37.2","3"
-"Samara Region","111","98.6","12.3"
-"Saratov region","84.5","78.8","5.6"
-"Ulyanovsk region","39.3","37","2.3"
+id;Total;State_Municipal;Private
+Bashkortostan;114,4;101,7;12,8
+Mariy-El;19,6;16,5;3,2
+Mordovia;30,1;24,8;5,4
+Tatarstan;163,2;124,2;39
+Udmurt ;51,3;44,2;7,1
+Chuvash ;38,3;31,7;6,6
+Perm ;66,4;59,8;6,6
+Kirov;36,2;32,1;4,1
+Nizhegorod;98,2;89,1;9,1
+Orenburg;53,3;48,1;5,2
+Penza;40,2;37,2;3
+Samara ;111;98,6;12,3
+Saratov ;84,5;78,8;5,6
+Ul'yanovsk;39,3;37;2,3
