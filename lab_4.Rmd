@@ -1,0 +1,131 @@
+---
+title: "lab_4"
+author: "Movrenko Anna"
+date: '25 марта 2020 г '
+output: html_document
+---
+С помощью «knitr» создать html-отчёт с короткими пояснениями к данным и с двумя картами: 
+1. Карта-хороплет регионов РФ, входящих в состав Приволжского федерального округа,  построенная функцией spplot() по данным сборников “Регионы России” за последний доступный год 16. 
+2. Такая же карта, но со статистикой за 2010 год, построенная функцией ggplot(). 
+```{r _1}
+# загрузка пакетов
+
+library('sp')                    # функция spplot()
+library('ggplot2')               # функция ggplot()
+library('RColorBrewer')          # цветовые палитры
+require('rgdal')                 # функция readOGR()
+library('broom')                 # функция tidy()
+require('dplyr')                 # функция join()
+library('scales')                # функция pretty_breaks()
+library('mapproj')               # проекции для карт
+#install.packages('gpclib', type = 'source')
+library('gpclib')
+library('maptools')
+# разрешить использовать полигональную геометрию, которая защищена лицензией 
+gpclibPermit()
+
+# распаковка данных (архив в ./data)
+unzip('./data/gadm36_RUS_shp.zip', exdir = './data/RUS_adm_shp')
+
+# прочитать данные уровней 0, 1, 2
+Regions0 <- readOGR("./data/RUS_adm_shp/gadm36_RUS_0.shp", stringsAsFactors = F)
+Regions1 <- readOGR("./data/RUS_adm_shp/gadm36_RUS_1.shp", stringsAsFactors = F)
+
+
+```
+
+Карта-хороплет для численности населения в регионах ПФО.
+
+```{r _2}
+# заготовка для присоединения данных 
+#  посмотрим на имена слотов объекта-карты
+slotNames(Regions1)
+
+# слот data
+colnames(Regions1@data)
+
+# преобразуем кодировку
+Encoding(Regions1@data$NL_NAME_1) <- 'UTF-8'
+Regions1@data$NL_NAME_1[1:10]
+
+# делаем фрейм с координатами для ggplot
+Regions.points <- fortify(Regions1, region = 'NAME_1')
+unique(Regions1@data$NAME_1)
+# оставляем только регионы ПФО
+reg.names.ПФО <- c('Bashkortostan', 'Mariy-El', 'Mordovia', 'Tatarstan', 'Udmurt', 
+                   'Chuvash', 'Perm', 'Kirov', 'Nizhegorod', 'Orenburg', 
+                   'Penza', 'Samara', "Saratov', 'Ul'yanovsk'")
+Regions.points <- Regions.points[Regions.points$id %in% reg.names.ПФО, ]
+head(Regions.points)
+
+```
+
+Карта, со статистикой за 2010 год, построенная функцией ggplot().
+Данные по регионам РФ взяты с сайта: https://www.gks.ru/folder/210/document/13204
+Раздел Образование: ЧИСЛЕННОСТЬ СТУДЕНТОВ, ОБУЧАЮЩИХСЯ ПО ПРОГРАММАМ 
+БАКАЛАВРИАТА, СПЕЦИАЛИТЕТА, МАГИСТРАТУРЫ
+(на начало учебного года; тысяч человек)
+
+
+```{r _3}
+# присоединяем показатель численности населения 
+df.st <- read.csv2('./data/PFO_10.csv', stringsAsFactors = F)
+Regions.points <- merge(Regions.points, df.st, by = 'id')
+Regions.points <- Regions.points[order(Regions.points$order), ]
+
+# график ggplot2 
+gp <- ggplot() + 
+    geom_polygon(data = Regions.points, 
+                 aes(long, lat, group = group, fill = Total)) +
+    geom_path(data = Regions.points, 
+              aes(long, lat, group = group),
+              color = 'coral4') +
+    coord_map(projection = 'gilbert') +
+    scale_fill_distiller(palette = 'OrRd',
+                         direction = 1,
+                         breaks = pretty_breaks(n = 5)) +
+    labs(x = 'Долгота', y = 'Широта',
+         title = "ЧИСЛЕННОСТЬ СТУДЕНТОВ, ОБУЧАЮЩИХСЯ ПО ПРОГРАММАМ 
+БАКАЛАВРИАТА, СПЕЦИАЛИТЕТА, МАГИСТРАТУРЫ, 2010 год")
+# выводим график
+gp
+```
+
+Карта-хороплет регионов РФ, входящих в состав Приволжского федерального округа,  построенная функцией spplot() за 2016 год. 
+
+```{r _4}
+# график spplot
+df.st1 <- read.csv2('./data/PFO_16.csv', stringsAsFactors = F)
+Regions.points <- merge(Regions.points, df.st1, by = 'id')
+Regions.points <- Regions.points[order(Regions.points$order), ]
+
+
+# работаем с Regions1, добавляем статистику
+Regions1@data <- merge(Regions1@data, df.st1, 
+                       by.x = 'NAME_1', by.y = 'id', all.x = T)
+
+# задаём границы карты
+scale.parameter <- 0.29  # scaling paramter. less than 1 is zooming in, more than 1 zooming out. 
+xshift <- 24.5  # Shift to right in map units. 
+yshift <- -6.0  # Shift to left in map units. 
+original.bbox <- Regions1@bbox  # Pass bbox of your Spatial* Object. 
+
+# Just copy-paste the following
+edges <- original.bbox
+edges[1, ] <- (edges[1, ] - mean(edges[1, ])) * 
+    scale.parameter + mean(edges[1, ]) + xshift
+edges[2, ] <- (edges[2, ] - mean(edges[2, ])) * scale.parameter + 
+    mean(edges[2, ]) + yshift
+
+# задаём палитру
+mypalette <- colorRampPalette(c('whitesmoke', 'coral3'))
+
+spplot(Regions1, 'Total',
+       col.regions = mypalette(20),  # определение цветовой шкалы
+       col = 'coral4',               # цвет контурных линий на карте
+       main = 'ЧИСЛЕННОСТЬ СТУДЕНТОВ, ОБУЧАЮЩИХСЯ ПО ПРОГРАММАМ 
+БАКАЛАВРИАТА, СПЕЦИАЛИТЕТА, МАГИСТРАТУРЫ, 2016 год', 
+       par.settings = list(axis.line = list(col = NA)), # без осей
+       xlim = edges[1, ], ylim = edges[2, ] )
+```
+
